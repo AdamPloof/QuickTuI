@@ -7,12 +7,12 @@ namespace QuickTui.UI.Logging;
 /// <summary>
 /// Logger for internal app usage. Writes logs to a file.
 /// </summary>
-public class DebugLogger : ILogger, IDisposable {
+public class FileLogger : ILogger, IDisposable {
     private readonly object _sync = new object();
     private readonly StreamWriter _writer;
     private bool _disposed;
 
-    public DebugLogger(string path) {
+    public FileLogger(string path) {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         FileStream stream = new(path, FileMode.Append, FileAccess.Write, FileShare.Read);

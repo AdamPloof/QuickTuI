@@ -19,6 +19,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <LogFiles Include="var/logs/**/*.*" />
+  </ItemGroup>
+
+  <Target Name="CopyLogFiles" AfterTargets="Build">
+    <Copy
+      SourceFiles="@(LogFiles)"
+      DestinationFolder="$(OutputPath)var/logs/"
+    />
+  </Target>
+
+  <ItemGroup>
+    <None Include="@(LogFiles)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\QuickTui.UI\QuickTui.UI.csproj" />
   </ItemGroup>
 
