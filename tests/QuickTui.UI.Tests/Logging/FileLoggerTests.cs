@@ -7,26 +7,32 @@ using QuickTui.UI.Logging;
 
 namespace QuickTui.UI.Tests.Logging;
 
-public class FileLoggerTests {
-    private readonly string _baseLogPath = Path.Combine(
-        AppContext.BaseDirectory,
-        "./var/logs/"
-    );
+public class FileLoggerTests : IDisposable {
+    private readonly string _logDir;
+
+    public FileLoggerTests() {
+        _logDir = Path.Combine(
+            Path.GetTempPath(),
+            nameof(FileLoggerTests),
+            Guid.NewGuid().ToString("N")
+        );
+
+        Directory.CreateDirectory(_logDir);
+    }
 
     [Fact]
     public void LogFileIsCreated() {
-        string logPath = Path.Combine(_baseLogPath, "file_created.log");
+        string logPath = GetLogPath("file_created.log");
         FileLogger logger = new(logPath);
         logger.Debug("test");
 
         Assert.True(File.Exists(logPath));
-        Cleanup(logPath);
     }
 
     [Fact]
     public void DebugLogIsWritten() {
         string msg = "First line";
-        string logPath = Path.Combine(_baseLogPath, "deubg_new.log");
+        string logPath = GetLogPath("deubg_new.log");
         FileLogger logger = new(logPath);
         logger.Debug(msg);
         List<string> lines = ReadLogLines(logPath);
@@ -34,8 +40,6 @@ public class FileLoggerTests {
         Assert.Single(lines);
         Assert.Contains("DEBUG", lines[0]);
         Assert.Contains(msg, lines[0]);
-
-        Cleanup(logPath);
     }
 
     [Fact]
@@ -43,7 +47,7 @@ public class FileLoggerTests {
         string msg1 = "First line";
         string msg2 = "Second line";
         string msg3 = "Third line";
-        string logPath = Path.Combine(_baseLogPath, "log_append.log");
+        string logPath = GetLogPath("log_append.log");
         FileLogger logger = new(logPath);
         logger.Debug(msg1);
         logger.Info(msg2);
@@ -59,8 +63,6 @@ public class FileLoggerTests {
 
         Assert.Contains("WARNING", lines[2]);
         Assert.Contains(msg3, lines[2]);
-
-        Cleanup(logPath);
     }
 
     [Fact]
@@ -68,7 +70,7 @@ public class FileLoggerTests {
         string msg1 = "First line";
         string msg2 = "Second line";
         string msg3 = "Third line";
-        string logPath = Path.Combine(_baseLogPath, "exception_log.log");
+        string logPath = GetLogPath("exception_log.log");
         FileLogger logger = new(logPath);
         logger.Debug(msg1);
         logger.Info(msg2);
@@ -87,8 +89,6 @@ public class FileLoggerTests {
         Assert.Contains("ERROR", lines[2]);
         Assert.Contains(msg3, lines[2]);
         Assert.Contains("Test Exception", lines[3]);
-
-        Cleanup(logPath);
     }
 
     [Fact]
@@ -96,6 +96,10 @@ public class FileLoggerTests {
         Assert.Throws<ArgumentException>(() => {
             FileLogger logger = new FileLogger("");
         });
+    }
+
+    public void Dispose() {
+        Directory.Delete(_logDir, recursive: true);
     }
 
     private List<string> ReadLogLines(string logPath) {
@@ -111,7 +115,7 @@ public class FileLoggerTests {
         return lines;
     }
 
-    private void Cleanup(string logPath) {
-        File.Delete(logPath);
+    private string GetLogPath(string filename) {
+        return Path.Combine(_logDir, filename);
     }
 }

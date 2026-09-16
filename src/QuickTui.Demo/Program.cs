@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 using QuickTui.UI;
 using QuickTui.UI.Layout;
@@ -8,6 +9,7 @@ using QuickTui.UI.Style;
 using QuickTui.UI.Events;
 using QuickTui.UI.App;
 using QuickTui.UI.Input;
+using QuickTui.UI.Logging;
 
 namespace QuickTui.Demo;
 
@@ -20,11 +22,19 @@ internal static class Program {
 }
 
 public class UI {
+    private readonly string _logPath;
+
     private IApplication _app;
     private Animation _animation;
     private Canvas? _canvas = null;
 
     public UI(Animation animation) {
+        _logPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "./var/logs/",
+            $"{DateTime.Now.ToString("yyyyMMdd")}.log"
+        );
+
         _animation = animation;
         _app = Build();
         ScheduleAnimation();
@@ -61,13 +71,15 @@ public class UI {
             Border = new Border(BorderStyle.Solid)
         };
 
+        DateTime now = DateTime.Now;
+        FileLogger logger = new(_logPath);
         Renderer renderer = new();
-        EventDispatcher dispatcher = new();
+        EventDispatcher dispatcher = new(logger);
         InputParser inputParser = new();
-        FocusManager focusManager = new(root);
-        CursorManager cursorManager = new();
+        FocusManager focusManager = new(root, logger);
+        CursorManager cursorManager = new(logger);
         Scheduler scheduler = new();
-        Application app = new Application(
+        Application app = new (
             root,
             renderer,
             dispatcher,

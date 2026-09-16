@@ -15,6 +15,12 @@ public class FileLogger : ILogger, IDisposable {
     public FileLogger(string path) {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
+        string fullPath = Path.GetFullPath(path);
+        string? directory = Path.GetDirectoryName(fullPath);
+        if (directory is not null) {
+            Directory.CreateDirectory(directory);
+        }
+
         FileStream stream = new(path, FileMode.Append, FileAccess.Write, FileShare.Read);
         _writer = new(stream, new UTF8Encoding(false)) {
             AutoFlush = true,

@@ -5,6 +5,7 @@ using QuickTui.UI;
 using QuickTui.UI.Widgets;
 using QuickTui.UI.Events;
 using QuickTui.UI.Layout;
+using QuickTui.UI.Logging;
 
 namespace QuickTui.UI.App;
 
@@ -13,11 +14,13 @@ public class CursorManager : ICursorManager {
     private IWidget? _cursorOwner;
     private int _screenWidth;
     private int _screenHeight;
+    private ILogger _logger;
 
-    public CursorManager() {
+    public CursorManager(ILogger logger) {
         _cursorOwner = null;
         _screenWidth = 0;
         _screenHeight = 0;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -60,6 +63,7 @@ public class CursorManager : ICursorManager {
         // Or maybe the focused widget does always own the cursor, but just
         // sometimes it's not visible (e.g. buttons)
         _cursorOwner = focusChanged.Focused;
+        _logger.Debug($"Cursor owner changed to {focusChanged.Focused.GetType().Name}");
     }
 
     public void HandleResize(ResizeEvent resizeEvent) {

@@ -4,16 +4,18 @@ using QuickTui.UI;
 using QuickTui.UI.App;
 using QuickTui.UI.Widgets;
 using QuickTui.UI.Layout;
+using QuickTui.UI.Logging;
 
 namespace QuickTui.UI.Tests.App;
 
 public class FocusManagerTests {
     public ILayout Layout { get; init; } = new HBoxLayout();
+    private NullLogger _stubLogger = new NullLogger();
 
     [Fact]
     public void FocusNextSingleWidgetTree() {
         Container root = new Container(null, Layout);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.FocusNext();
 
         Assert.True(root.GetId() == focusManager.GetFocusedWidget().GetId());
@@ -22,7 +24,7 @@ public class FocusManagerTests {
     [Fact]
     public void FocuPreviousSingleWidgetTree() {
         Container root = new Container(null, Layout);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.FocusPrevious();
 
         Assert.True(root.GetId() == focusManager.GetFocusedWidget().GetId());
@@ -34,7 +36,7 @@ public class FocusManagerTests {
         MockNonFocusable childA = new MockNonFocusable(root);
         MockNonFocusable childB = new MockNonFocusable(root);
         MockNonFocusable childC = new MockNonFocusable(root);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.FocusNext();
 
         Assert.True(root.GetId() == focusManager.GetFocusedWidget().GetId());
@@ -46,7 +48,7 @@ public class FocusManagerTests {
         MockNonFocusable childA = new MockNonFocusable(root);
         MockNonFocusable childB = new MockNonFocusable(root);
         MockNonFocusable childC = new MockNonFocusable(root);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.FocusPrevious();
 
         Assert.True(root.GetId() == focusManager.GetFocusedWidget().GetId());
@@ -58,7 +60,7 @@ public class FocusManagerTests {
         Container siblingA = new Container(root, Layout);
         MockFocusable childA = new MockFocusable(siblingA);
         MockFocusable childB = new MockFocusable(siblingA);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.FocusNext();
 
         Assert.True(childA.GetId() == focusManager.GetFocusedWidget().GetId());
@@ -70,7 +72,7 @@ public class FocusManagerTests {
         MockFocusable siblingA = new MockFocusable(root);
         MockFocusable childA = new MockFocusable(siblingA);
         MockFocusable childB = new MockFocusable(siblingA);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childA);
         focusManager.FocusNext();
 
@@ -86,7 +88,7 @@ public class FocusManagerTests {
         MockFocusable siblingB = new MockFocusable(root);
         MockFocusable childBA = new MockFocusable(siblingB);
         MockFocusable childBB = new MockFocusable(siblingB);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childB);
         focusManager.FocusNext();
 
@@ -102,7 +104,7 @@ public class FocusManagerTests {
         Container siblingB = new Container(root, Layout);
         MockFocusable childBA = new MockFocusable(siblingB);
         MockFocusable childBB = new MockFocusable(siblingB);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childB);
         focusManager.FocusNext();
 
@@ -118,7 +120,7 @@ public class FocusManagerTests {
         Container siblingB = new Container(root, Layout);
         MockFocusable childBA = new MockFocusable(siblingB);
         MockFocusable childBB = new MockFocusable(siblingB);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childBB);
         focusManager.FocusNext();
 
@@ -134,7 +136,7 @@ public class FocusManagerTests {
         Container siblingB = new Container(root, Layout);
         MockFocusable childBA = new MockFocusable(siblingB);
         MockFocusable childBB = new MockFocusable(siblingB);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.FocusPrevious();
 
         Assert.True(childBB.GetId() == focusManager.GetFocusedWidget().GetId());
@@ -146,7 +148,7 @@ public class FocusManagerTests {
         Container siblingA = new Container(root, Layout);
         MockFocusable childA = new MockFocusable(siblingA);
         MockFocusable childB = new MockFocusable(siblingA);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childB);
         focusManager.FocusPrevious();
 
@@ -162,7 +164,7 @@ public class FocusManagerTests {
         Container siblingB = new Container(root, Layout);
         MockFocusable childBA = new MockFocusable(siblingB);
         MockFocusable childBB = new MockFocusable(siblingB);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childBA);
         focusManager.FocusPrevious();
 
@@ -178,7 +180,7 @@ public class FocusManagerTests {
         MockFocusable siblingB = new MockFocusable(root);
         MockFocusable childBA = new MockFocusable(siblingB);
         MockFocusable childBB = new MockFocusable(siblingB);
-        FocusManager focusManager = new FocusManager(root);
+        FocusManager focusManager = new FocusManager(root, _stubLogger);
         focusManager.ChangeFocus(childBA);
         focusManager.FocusPrevious();
 
