@@ -53,7 +53,7 @@ public class UI {
         };
         TextBox label = new TextBox(
             root,
-            "Build something quickly.",
+            "This elevator only goes to the basement...",
             new CellStyle(TextFormat.Normal, new Color(255, 0, 0))
         ) {
             StretchHorizontal = 1,
