@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using QuickTui.UI.Widgets;
 using QuickTui.UI.Events;
+using QuickTui.UI.Logging;
 
 namespace QuickTui.UI.App;
 
@@ -12,8 +13,9 @@ public class FocusManager : IFocusManager {
     private IWidget _root;
     private IWidget _focused;
     private List<Action<FocusChangedEvent>> _listeners;
+    private ILogger _logger;
 
-    public FocusManager(IWidget root) {
+    public FocusManager(IWidget root, ILogger logger) {
         if (root.Parent is not null) {
             throw new ArgumentException("Root widget must have a null parent");
         }
@@ -25,6 +27,7 @@ public class FocusManager : IFocusManager {
         _root = root;
         _focused = root;
         _listeners = [];
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -49,6 +52,7 @@ public class FocusManager : IFocusManager {
 
         IWidget prevFocus = _focused;
         _focused = widget;
+        _logger.Debug($"Focused widget changed: {_focused.GetType().Name}");
 
         if (_listeners.Count > 0) {
             FocusChangedEvent focusChanged = new FocusChangedEvent(prevFocus, _focused);

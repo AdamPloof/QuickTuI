@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Collections.Generic;
+using System.Linq;
 
 using QuickTui.UI;
 using QuickTui.UI.App;
@@ -8,7 +9,6 @@ using QuickTui.UI.Drawing;
 using QuickTui.UI.Events;
 using QuickTui.UI.Layout;
 using QuickTui.UI.Style;
-using System.Linq;
 
 namespace QuickTui.UI.Widgets;
 
@@ -17,7 +17,7 @@ namespace QuickTui.UI.Widgets;
 /// </summary>
 public class TextBox : Widget {
     /// <inheritdoc />
-    public override bool AcceptsFocus { get; protected set; } = false;
+    public override bool AcceptsFocus { get; protected set; } = true;
 
     /// <summary>
     /// When true, the TextBox will ignore user input. Content can still be
@@ -33,7 +33,6 @@ public class TextBox : Widget {
     public TextBox(IWidget? parent, string? content, CellStyle? style) : base(parent) {
         _style = style ?? new CellStyle();
         _buffer = [];
-
         _lines = NormalizeContent(content ?? "").Split('\n').ToList();
 
         // TODO: should move cursor position management to a separate class
@@ -88,7 +87,7 @@ public class TextBox : Widget {
             return false;
         }
 
-        if (_cursor.Position.X > 0 || _cursor.Position.X > _lines[_cursor.Position.Y].Length) {
+        if (_cursor.Position.X < 0 || _cursor.Position.X > _lines[_cursor.Position.Y].Length) {
             return false;
         }
 
