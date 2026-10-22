@@ -2,97 +2,117 @@
 
 ## Goal
 
-Move text editing and viewport bookkeeping out of `TextBox` while keeping the first implementation small. `TextBox` should remain responsible for adapting UI events, painting cells, managing focus, and exposing a widget-local cursor.
+Move text storage, editing behavior, and viewport bookkeeping out of `TextBox`. Keep `TextBox` focused on its role as a widget: receiving UI events, painting visible cells, managing focus and dirty state, and exposing a widget-local cursor.
 
-The MVP uses logical lines, vertical and horizontal scrolling, and no soft wrapping.
+The MVP uses logical lines with vertical and horizontal scrolling and no soft wrapping.
 
-## 1. Establish the behavior to preserve
+## Component overview
 
-- [ ] Treat document positions as zero-based line and column values.
-- [ ] Allow the caret column to equal the line length so it can represent the insertion point after the final character.
-- [ ] Keep logical document positions distinct from widget-local cursor positions.
-- [ ] Represent empty content consistently as one empty logical line.
-- [ ] Continue treating one UTF-16 `char` as one terminal cell for the MVP.
-- [ ] Add focused tests for any existing `TextBox` behavior that must survive the refactor before moving it.
+```text
+TextInputEvent / KeyEvent -> TextBox
+                              |-- commands ----------> TextEditor -> TextContent
+                              |-- view coordination -> TextViewport
+                              |-- paints visible content
+                              `-- exposes cursor ----> CursorManager
+```
 
-## 2. Extract the editing state
+### `TextContent`
 
-- [ ] Add an internal `TextEditorState` that owns the logical lines and logical caret position.
-- [ ] Add a small `TextPosition` value type with named `Line` and `Column` properties instead of using `Point` for document coordinates.
-- [ ] Move content normalization and caret validation out of `TextBox`.
-- [ ] Keep at least one logical line after construction, content replacement, and deletion.
-- [ ] Move text insertion into `TextEditorState`, including insertion of text containing newlines.
-- [ ] Move Enter behavior into `TextEditorState` by splitting the current line.
-- [ ] Move Backspace behavior into `TextEditorState`, including joining with the previous line at column zero.
-- [ ] Move Delete behavior into `TextEditorState`, including joining with the next line at line end.
-- [ ] Move left, right, up, down, Home, End, document-start, and document-end navigation into `TextEditorState`.
-- [ ] Preserve the intended column when moving vertically across lines of unequal length.
-- [ ] Ensure every edit leaves the caret at a valid position.
-- [ ] Decide and test whether replacing all content resets the caret or clamps it to the new content.
-- [ ] Expose enough change information for `TextBox` to know when visible content or the caret changed; keep the initial mechanism simple.
-- [ ] Add `TextEditorStateTests` for newline normalization, insertion, line splitting and joining, deletion boundaries, movement boundaries, cross-line movement, preferred-column behavior, empty content, and content replacement.
+Owns the logical line buffer and the rules for changing text. It is responsible for maintaining valid content, normalizing line endings, and performing insertion and deletion. It should provide the editor and renderer with controlled access to the content without taking on cursor, viewport, widget, or terminal responsibilities.
 
-## 3. Extract the viewport state
+### `TextEditor`
 
-- [ ] Add an internal `TextViewport` that tracks the first visible logical line, first visible column, width, and height.
-- [ ] Update viewport dimensions from the `TextBox` content area.
-- [ ] Keep viewport offsets valid when content changes or the widget is resized.
-- [ ] Add behavior that scrolls only as much as necessary to keep the caret visible.
-- [ ] Handle the caret at the insertion point immediately after the last visible character.
-- [ ] Provide the minimal coordinate conversion needed to map the logical caret into the visible content area.
-- [ ] Add `TextViewportTests` for each edge, long lines, short documents, empty dimensions, resizing while scrolled, and content shrinkage.
+Owns the logical cursor position and interprets `EditorCommand` values. It coordinates navigation and editing operations with `TextContent`, ensuring the cursor remains valid after every command. It should not depend on widget geometry or terminal coordinates.
 
-## 4. Route input through `TextEditorState`
+### `TextViewport`
 
-- [ ] Keep `InputParser` responsible for producing `TextInputEvent` and `KeyEvent`; do not add editor behavior to it.
-- [ ] Have `TextBox` pass `TextInputEvent.Text` to the editing state as a single insertion operation so multi-character input remains possible.
-- [ ] Have `TextBox` translate supported `KeyEvent` values into direct editing-state operations.
-- [ ] Use modifier flag checks where modifiers affect movement.
-- [ ] After an edit or caret movement, ask the viewport to keep the caret visible and update the widget-local cursor.
-- [ ] Mark a supported input event handled even when the caret is already at a boundary and no state changes.
-- [ ] Leave unsupported keys unhandled.
-- [ ] Keep read-only handling in `TextBox`: allow supported navigation if read-only text boxes remain focusable, but do not invoke mutation operations.
-- [ ] Add tests for text input, supported navigation and editing keys, boundary keys, unsupported keys, modifiers, and read-only behavior.
+Tracks the portion of the logical content that is visible within the widget. It uses the content-area dimensions and logical cursor position to manage vertical and horizontal offsets. It also provides the mapping from a logical text position to a position within the visible content area.
 
-## 5. Refactor painting
+This component has not been started. Its exact API can be discovered while integrating scrolling into `TextBox`.
 
-- [ ] Replace the line, logical-caret, and viewport fields in `TextBox` with the extracted state objects.
-- [ ] Stop using the wrapping behavior of `TextBuffer.FromLines` for editable text.
-- [ ] Paint one logical line per content-area row.
-- [ ] Slice each visible line at the viewport's first visible column and clip it to the content-area width.
-- [ ] Paint only inside `ContentArea()`, preserving border and padding cells.
-- [ ] Mark the widget dirty when an edit, style change, resize, or viewport movement changes visible cells.
-- [ ] Add `TextBoxTests` for clipping without wrapping, horizontal and vertical scrolling, resizing, borders, padding, empty content areas, content replacement, and dirty state.
+### `TextBox`
 
-## 6. Synchronize the terminal cursor
+Translates UI input into editor commands, passes those commands to `TextEditor`, and reflects resulting state changes in the viewport, rendered cells, dirty state, and displayed cursor. It owns presentation concerns such as style, border, padding, focus, and read-only behavior.
 
-- [ ] Convert the logical caret into a viewport-relative position after caret or viewport changes.
-- [ ] Add the content-area offset to produce the widget-local `Cursor.Position` exposed by `TextBox`.
-- [ ] Show the cursor only while `TextBox` has focus and the calculated position is inside its drawable content area.
-- [ ] Keep `CursorManager` unaware of logical lines, editor state, and viewport offsets.
-- [ ] Ensure the content-area offset and widget bounding-box offset are each applied exactly once.
-- [ ] Add tests for cursor placement with scrolling, border, padding, focus changes, and an empty content area.
+### `CursorManager`
 
-## 7. Verify the integrated editor
+Continues to manage the physical terminal cursor. It should receive a widget-local cursor position from `TextBox` and remain unaware of logical text positions, line content, and viewport offsets.
 
-- [ ] Add or update the demo so multiline editing and overflow can be exercised interactively.
-- [ ] Manually verify typing, multiline input, Enter, Backspace, Delete, navigation, horizontal scrolling, vertical scrolling, focus changes, and terminal resizing.
-- [ ] Manually verify cursor placement in a text box with both border and padding.
-- [ ] Run `dotnet test QuickTui.sln -nodeReuse:false -maxcpucount:1` after each extraction step.
-- [ ] Run `dotnet build QuickTui.sln -nodeReuse:false -maxcpucount:1` after integration.
-- [ ] Record legitimate failing tests and their causes instead of weakening assertions.
+## Current progress
 
-## Not part of the MVP
+- [x] Add a zero-based `TextPosition` value type with named `Line` and `Column` properties.
+- [x] Add `ITextContent` and `TextContent` as the beginning of a dedicated content layer.
+- [x] Store content as logical lines and represent initially empty content with one empty line.
+- [x] Implement and test initial same-line insertion, forward deletion, and backward deletion.
+- [x] Define the initial `EditorCommand` vocabulary for text insertion, deletion, navigation, line breaks, paging, and insert mode.
+- [x] Add `ITextEditor` and the initial `TextEditor` structure.
+- [x] Establish `TextEditor` as the owner of `TextContent` and the logical cursor position.
+- [ ] Connect command handling, content mutation, and cursor movement inside `TextEditor`.
+- [ ] Replace the editing logic still held by `TextBox` with the new components.
 
-Defer these until current behavior demonstrates a need for them:
+## Main implementation work
 
-- A separate `TextDocument` abstraction. For now, `TextEditorState` can own the logical lines.
-- An editor-command class hierarchy or configurable key map. Direct calls from `TextBox` to `TextEditorState` are sufficient initially.
-- Selection, clipboard integration, mouse hit testing, and undo/redo.
-- Insert/overwrite mode, word movement, and page movement.
-- Soft wrapping and a separate text-layout abstraction.
-- Full Unicode grapheme and terminal cell-width handling.
-- Rich text or syntax styling.
-- A general cursor-provider abstraction.
-- Changes to the application-wide event-dispatch model unless the editor exposes a concrete routing problem.
-- A terminal-driver abstraction.
+### 1. Complete the core `TextContent` behavior
+
+- [ ] Finish content normalization and multiline editing behavior.
+- [ ] Define consistent behavior for insertion and deletion at line and document boundaries.
+- [ ] Support the line splitting and joining needed by Enter, Backspace, and Delete.
+- [ ] Provide the content access needed by `TextEditor` and `TextBox` while keeping ownership of the line buffer in `TextContent`.
+- [ ] Expand tests around multiline changes, empty content, and boundary behavior.
+
+### 2. Implement `TextEditor` command handling
+
+- [ ] Handle the MVP subset of `EditorCommand` values.
+- [ ] Update the logical cursor after edits and navigation.
+- [ ] Support movement within a line and across line boundaries.
+- [ ] Preserve the intended column during vertical movement across lines of different lengths.
+- [ ] Ensure the cursor remains valid whenever content changes.
+- [ ] Expose enough editor state for `TextBox` to render content and react to changes without exposing widget concerns to the editor.
+- [ ] Add tests for command handling, cursor movement, edits, and boundary conditions.
+
+Commands already represented in the type hierarchy do not all need to be implemented in the first pass. Paging, selection extension, and insert mode can remain unsupported until their behavior is needed.
+
+### 3. Add viewport management
+
+- [ ] Add viewport state for the visible line and column offsets and the available content dimensions.
+- [ ] Keep the viewport valid as content and widget dimensions change.
+- [ ] Scroll only as needed to keep the logical cursor visible.
+- [ ] Map the logical cursor position to a position within the visible content area.
+- [ ] Add focused tests for vertical and horizontal overflow, resizing, and viewport boundaries.
+
+### 4. Integrate the editor with `TextBox`
+
+- [ ] Give `TextBox` a `TextEditor` and viewport instead of maintaining its own line buffer and logical cursor.
+- [ ] Translate `TextInputEvent` and supported `KeyEvent` values into `EditorCommand` values.
+- [ ] Keep read-only policy, focus behavior, and event-handled state in the widget layer.
+- [ ] Update the viewport and widget dirty state after commands change editor state.
+- [ ] Preserve the existing public content API where practical, delegating it to the new content/editor layer.
+- [ ] Add integration tests covering input events, editor commands, visible content, and dirty state.
+
+### 5. Update painting and cursor placement
+
+- [ ] Paint the visible slice of `TextContent` without soft wrapping.
+- [ ] Keep painting constrained to `ContentArea()` so border and padding remain presentation concerns.
+- [ ] Convert the editor's logical cursor through the viewport into a widget-local cursor position.
+- [ ] Ensure focus, scrolling, border, padding, and empty content areas produce the expected cursor visibility and position.
+- [ ] Keep `CursorManager` limited to translating the widget-local cursor to terminal coordinates.
+
+### 6. Verify the integrated behavior
+
+- [ ] Exercise multiline editing and overflow in the demo.
+- [ ] Manually verify editing, navigation, scrolling, focus changes, cursor placement, and terminal resizing.
+- [ ] Keep unit tests close to their owning component: content mutations in `TextContentTests`, command and cursor behavior in `TextEditorTests`, and rendering/input integration in `TextBoxTests`.
+- [ ] Run the full test suite and build after integration.
+
+## Deferred work
+
+These features are outside the initial refactor unless the implementation reveals an immediate need:
+
+- Selection, clipboard integration, mouse input, and undo/redo
+- Insert/overwrite behavior, word movement, and page movement
+- Soft wrapping and a width-aware text-layout component
+- Full Unicode grapheme and terminal cell-width handling
+- Rich text or syntax styling
+- Configurable key bindings
+- Broader changes to application event dispatch
+- A generalized cursor-provider or terminal-driver abstraction

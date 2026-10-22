@@ -13,26 +13,30 @@ public interface ITextContent {
     /// </summary>
     /// <param name="content"></param>
     /// <param name="position"></param>
-    public void Insert(string text, TextPosition position);
+    /// <returns>The new text position after the edit</returns>
+    public TextPosition Insert(string text, TextPosition position);
 
     /// <summary>
     /// Insert a single character at the current cursor position.
     /// </summary>
     /// <param name="c"></param>
     /// <param name="position"></param>
-    public void Insert(char c, TextPosition position);
+    /// <returns>The new text position after the edit</returns>
+    public TextPosition Insert(char c, TextPosition position);
 
     /// <summary>
     /// Delete text in front of the current cursor position.
     /// </summary>
     /// <param name="length"></param>
     /// <param name="position"></param>
-    public void Delete(int length, TextPosition position);
+    /// <returns>The new text position after the edit</returns>
+    public TextPosition Delete(int length, TextPosition position);
 
     /// <summary>
     /// Delete text behind the current cursor position.
     /// </summary>
     /// <param name="length"></param>
     /// <param name="position"></param>
-    public void Backspace(int length, TextPosition position);
+    /// <returns>The new text position after the edit</returns>
+    public TextPosition Backspace(int length, TextPosition position);
 }

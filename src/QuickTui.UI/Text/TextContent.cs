@@ -21,28 +21,32 @@ public class TextContent : ITextContent {
     }
 
     /// <inheritdoc/>
-    public void Insert(string text, TextPosition position) {
+    public TextPosition Insert(string text, TextPosition position) {
         int line = Numeric.Clamp(position.Line, 0, Lines.Count);
         if (line > Lines.Count) {
             Lines.Add(text);
-        } else {
-            Lines[line] = Lines[line].Insert(
-                Numeric.Clamp(position.Column, 0, Lines[line].Length),
-                text
-            );
+            return new TextPosition(Lines.Count - 1, text.Length);
         }
+
+        Lines[line] = Lines[line].Insert(
+            Numeric.Clamp(position.Column, 0, Lines[line].Length),
+            text
+        );
+
+        return new TextPosition(line, position.Column + text.Length);
     }
 
     /// <inheritdoc/>
-    public void Insert(char c, TextPosition position) {
-        Insert(c.ToString(), position);
+    public TextPosition Insert(char c, TextPosition position) {
+        return Insert(c.ToString(), position);
     }
 
     /// <inheritdoc/>
-    public void Delete(int length, TextPosition position) {
+    public TextPosition Delete(int length, TextPosition position) {
         int line = Numeric.Clamp(position.Line, 0, Lines.Count);
         if (line > Lines.Count || length == 0) {
-            return;
+            // Nothing to delete at this position/length
+            return position;
         }
 
         int col = Numeric.Clamp(position.Column, 0, Lines[line].Length - 1);
@@ -53,13 +57,15 @@ public class TextContent : ITextContent {
         length -= lineDeleteLength;
 
         Delete(length, new TextPosition(position.Line + 1, 0));
+
+        return position;
     }
 
     /// <inheritdoc/>
-    public void Backspace(int length, TextPosition position) {
+    public TextPosition Backspace(int length, TextPosition position) {
         int line = Numeric.Clamp(position.Line, 0, Lines.Count);
         if (line < 0 || length == 0) {
-            return;
+            return position;
         }
 
         int col = Numeric.Clamp(position.Column, 0, Lines[line].Length);
@@ -76,13 +82,16 @@ public class TextContent : ITextContent {
 
         Lines[line] = Lines[line].Remove(startDeleteCol, lineDeleteLength);
         length -= lineDeleteLength;
+        if (length == 0) {
+            return new TextPosition(position.Line, position.Column - lineDeleteLength);
+        }
 
         int previousLine = position.Line - 1;
         if (previousLine < 0) {
-            return;
+            return new TextPosition(0, 0);
         }
 
-        Backspace(
+        return Backspace(
             length,
             new TextPosition(
                 previousLine,
