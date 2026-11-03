@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -18,6 +19,10 @@ public class TextContent : ITextContent {
 
     public TextContent(string content) {
         Lines = NormalizeContent(content).Split('\n').ToList();
+    }
+
+    public TextContent(List<string> lines) {
+        Lines = lines;
     }
 
     /// <inheritdoc/>
@@ -56,7 +61,12 @@ public class TextContent : ITextContent {
         Lines[line] = Lines[line].Remove(col, lineDeleteLength);
         length -= lineDeleteLength;
 
-        Delete(length, new TextPosition(position.Line + 1, 0));
+        if (length > 0 && Lines[line].Length == 0) {
+            // Full line has been deleted
+            Lines.RemoveAt(line);
+        }
+
+        Delete(length, new TextPosition(position.Line, 0));
 
         return position;
     }
@@ -69,35 +79,73 @@ public class TextContent : ITextContent {
         }
 
         int col = Numeric.Clamp(position.Column, 0, Lines[line].Length);
-
-        int startDeleteCol;
-        int lineDeleteLength;
-        if (length <= col) {
-            startDeleteCol = col - length;
-            lineDeleteLength = length;
-        } else {
-            startDeleteCol = 0;
-            lineDeleteLength= col + 1;
+        int maxDeleteLength = col;
+        for (int i = 0; i < line; i++) {
+            maxDeleteLength += Lines[line].Length;
         }
 
-        Lines[line] = Lines[line].Remove(startDeleteCol, lineDeleteLength);
-        length -= lineDeleteLength;
-        if (length == 0) {
-            return new TextPosition(position.Line, position.Column - lineDeleteLength);
-        }
+        int deleteLength = length > maxDeleteLength ? maxDeleteLength : length;
 
-        int previousLine = position.Line - 1;
-        if (previousLine < 0) {
-            return new TextPosition(0, 0);
-        }
-
-        return Backspace(
-            length,
-            new TextPosition(
-                previousLine,
-                Lines[previousLine].Length - 1
-            )
+        return Delete(
+            deleteLength,
+            PositionDelta(position, deleteLength * -1)
         );
+    }
+
+    /// <summary>
+    /// Returns a new TextPosition a distance from the provided position. Used
+    /// to simplify calculating new positions using only number of characters.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="delta"></param>
+    /// <returns></returns>
+    public TextPosition PositionDelta(TextPosition position, int delta) {
+        if (position.Line > Lines.Count - 1) {
+            throw new ArgumentOutOfRangeException(
+                $"Unable to calculate position: Line {position.Line} is past last line"
+            );
+        }
+
+        if (position.Column > Lines[position.Line].Length) {
+            string err = $"""
+                Unable to calculate position: Column ({position.Column}) greater
+                than line {position.Line} length ({Lines[position.Line].Length})
+                """;
+            throw new ArgumentOutOfRangeException(err);
+        }
+
+        if (position.Column + delta >= 0 && position.Column + delta < Lines[position.Line].Length) {
+            // Complete the move on the same line
+            return new TextPosition(position.Line, position.Column + delta);
+        }
+
+        if (delta < 0) {
+            if (position.Line == 0) {
+                return new TextPosition(0, 0);
+            }
+
+            int deltaFromPreviousLineEnd = delta + position.Column + 1;
+            TextPosition previousLineEnd = new TextPosition(
+                position.Line - 1,
+                Lines[position.Line - 1].Length
+            );
+
+            return PositionDelta(previousLineEnd, deltaFromPreviousLineEnd);
+        } else {
+            if (position.Line == Lines.Count - 1) {
+                return new TextPosition(position.Line, Lines[position.Line].Length);
+            }
+
+            int deltaFromNextLineStart = delta - (Lines[position.Line].Length - position.Column) - 1;
+            TextPosition nextLineStart = new TextPosition(position.Line + 1, 0);
+
+            return PositionDelta(nextLineStart, deltaFromNextLineStart);
+        }
+    }
+
+    /// <inheritdoc/>
+    public override string ToString() {
+        return String.Join('\n', Lines);
     }
 
     /// <summary>

@@ -39,4 +39,10 @@ public interface ITextContent {
     /// <param name="position"></param>
     /// <returns>The new text position after the edit</returns>
     public TextPosition Backspace(int length, TextPosition position);
+
+    /// <summary>
+    /// Join the lines into a string.
+    /// </summary>
+    /// <returns></returns>
+    public string ToString();
 }

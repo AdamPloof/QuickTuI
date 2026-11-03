@@ -19,5 +19,8 @@ public readonly record struct TextPosition {
         Column = column;
     }
 
+    /// <summary>
+    /// Shortcut for new TextPosition(0, 0)
+    /// </summary>
     public static TextPosition Start => default;
 }
