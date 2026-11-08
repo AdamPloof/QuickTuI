@@ -319,6 +319,19 @@ public class PositionDeltaTests {
     }
 
     [Fact]
+    public void MoveBackwardPrevLineSimple() {
+        List<string> lines = [
+            "abc",
+            "def"
+        ];
+        TextContent content = new(lines);
+        TextPosition oldPos = new(1, 0);
+        TextPosition newPos = content.PositionDelta(oldPos, -1);
+
+        Assert.Equal(new TextPosition(0, 3), newPos);
+    }
+
+    [Fact]
     public void MoveBackwardPrevLine() {
         TextContent content = new(baseStr);
         TextPosition oldPos = new(1, 3);

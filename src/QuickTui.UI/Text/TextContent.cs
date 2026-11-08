@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 
 using QuickTui.UI.Helpers;
+using System.Diagnostics;
 
 namespace QuickTui.UI.Text;
 
@@ -54,21 +55,40 @@ public class TextContent : ITextContent {
             return position;
         }
 
-        int col = Numeric.Clamp(position.Column, 0, Lines[line].Length - 1);
-        int lengthInLine = Lines[line].Length - col;
-        int lineDeleteLength = length > lengthInLine ? lengthInLine : length;
+        int col = Numeric.Clamp(position.Column, 0, Lines[line].Length);
+        int distanceToLineEnd = Lines[line].Length - col;
+        int lineDeleteLength = length > distanceToLineEnd ? distanceToLineEnd : length;
 
+        // In theory, this should do nothing...
         Lines[line] = Lines[line].Remove(col, lineDeleteLength);
         length -= lineDeleteLength;
 
-        if (length > 0 && Lines[line].Length == 0) {
-            // Full line has been deleted
-            Lines.RemoveAt(line);
+        if (length == 0) {
+            return position;
         }
 
-        Delete(length, new TextPosition(position.Line, 0));
+        TextPosition nextPos;
+        if (Lines[line].Length == 0) {
+            // Full line has been deleted
+            Lines.RemoveAt(line);
+            length -= 1;
+            nextPos = new TextPosition(position.Line, 0);
+        } else {
+            Debug.Assert(position.Column == Lines[line].Length, "Expected cursor to be at line end");
+            // Cursor at end with more to delete
+            if (line >= Lines.Count - 1) {
+                // End of content
+                return position;
+            }
 
-        return position;
+            // Merge lines
+            Lines[line] += Lines[line + 1];
+            Lines.RemoveAt(line + 1);
+            length -= 1;
+            nextPos = position;
+        }
+
+        return Delete(length, nextPos);
     }
 
     /// <inheritdoc/>
@@ -112,6 +132,10 @@ public class TextContent : ITextContent {
                 than line {position.Line} length ({Lines[position.Line].Length})
                 """;
             throw new ArgumentOutOfRangeException(err);
+        }
+
+        if (delta == 0) {
+            return position;
         }
 
         if (position.Column + delta >= 0 && position.Column + delta < Lines[position.Line].Length) {
