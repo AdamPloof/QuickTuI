@@ -27,6 +27,38 @@ public class TextContent : ITextContent {
     }
 
     /// <inheritdoc/>
+    public List<string> GetLines() {
+        return Lines;
+    }
+
+    /// <inheritdoc/>
+    public char CharAt(TextPosition position) {
+        if (!PositionIsValid(position)) {
+            throw new ArgumentOutOfRangeException(
+                $"Invalid position. Line {position.Line}, Column: {position.Column}"
+            );
+        }
+
+        return Lines[position.Line][position.Column];
+    }
+
+    /// <inheritdoc/>
+    public int LineCount() {
+        return Lines.Count;
+    }
+
+    /// <inheritdoc/>
+    public int LineLength(int line) {
+        if (line < 0 || line >= Lines.Count) {
+            throw new ArgumentOutOfRangeException(
+                $"Line {line} is out of range. Line ount: {Lines.Count}"
+            );
+        }
+
+        return Lines[line].Length;
+    }
+
+    /// <inheritdoc/>
     public TextPosition Insert(string text, TextPosition position) {
         int line = Numeric.Clamp(position.Line, 0, Lines.Count);
         if (line > Lines.Count) {
@@ -59,11 +91,11 @@ public class TextContent : ITextContent {
         int distanceToLineEnd = Lines[line].Length - col;
         int lineDeleteLength = length > distanceToLineEnd ? distanceToLineEnd : length;
 
-        // In theory, this should do nothing...
         Lines[line] = Lines[line].Remove(col, lineDeleteLength);
         length -= lineDeleteLength;
 
-        if (length == 0) {
+        if (length == 0 || line >= Lines.Count - 1) {
+            // Nothing left to delete
             return position;
         }
 
@@ -75,13 +107,7 @@ public class TextContent : ITextContent {
             nextPos = new TextPosition(position.Line, 0);
         } else {
             Debug.Assert(position.Column == Lines[line].Length, "Expected cursor to be at line end");
-            // Cursor at end with more to delete
-            if (line >= Lines.Count - 1) {
-                // End of content
-                return position;
-            }
-
-            // Merge lines
+            // Cursor at end with more to delete, merge lines
             Lines[line] += Lines[line + 1];
             Lines.RemoveAt(line + 1);
             length -= 1;
@@ -112,13 +138,7 @@ public class TextContent : ITextContent {
         );
     }
 
-    /// <summary>
-    /// Returns a new TextPosition a distance from the provided position. Used
-    /// to simplify calculating new positions using only number of characters.
-    /// </summary>
-    /// <param name="position"></param>
-    /// <param name="delta"></param>
-    /// <returns></returns>
+    /// <inheritdoc/>
     public TextPosition PositionDelta(TextPosition position, int delta) {
         if (position.Line > Lines.Count - 1) {
             throw new ArgumentOutOfRangeException(
@@ -179,5 +199,23 @@ public class TextContent : ITextContent {
     /// <returns></returns>
     private static string NormalizeContent(string content) {
         return content.Replace("\r\n", "\n").Replace("\n", "\n");
+    }
+
+    /// <summary>
+    /// Returns true if the position is within the content.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    private bool PositionIsValid(TextPosition position) {
+        if (
+            position.Line >= Lines.Count
+            || position.Line < 0
+            || position.Column > Lines[position.Line].Length
+            || position.Column < 0
+        ) {
+            return false;
+        }
+
+        return true;
     }
 }
