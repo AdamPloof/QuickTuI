@@ -27,8 +27,21 @@ public class TextCaret : ITextCaret {
         };
 
         public static TextPosition Next(ITextContent content, TextPosition position) {
-            Dictionary<bool, string> state = _states["start"];
+            int lastLine = content.LineCount() - 1;
+            int lastCol = content.LineLength(lastLine);
+            if (position.Line == lastLine && position.Column == lastCol) {
+                return position;
+            }
+
             TextPosition currentPos = position;
+            if (currentPos.Column == content.LineLength(currentPos.Line)) {
+                // end of line
+                currentPos = new TextPosition(currentPos.Line + 1, 0);
+            } else {
+                currentPos = new TextPosition(currentPos.Line, currentPos.Column + 1);
+            }
+
+            Dictionary<bool, string> state = _states["start"];
             while (true) {
                 char current = content.CharAt(currentPos);
                 bool trigger = char.IsWhiteSpace(current);
@@ -43,7 +56,7 @@ public class TextCaret : ITextCaret {
 
                 if (currentPos.Column == content.LineLength(currentPos.Line)) {
                     // end of line
-                    if (currentPos.Line + 1 >= content.LineCount()) {
+                    if (currentPos.Line == lastLine) {
                         // end of content
                         return currentPos;
                     }
@@ -56,15 +69,28 @@ public class TextCaret : ITextCaret {
         }
 
         public static TextPosition Previous(ITextContent content, TextPosition position) {
-            Dictionary<bool, string> state = _states["start"];
+            if (position == new TextPosition(0, 0)) {
+                return position;
+            }
+
             TextPosition currentPos = position;
+            if (currentPos.Column == 0) {
+                // start of line
+                int lastCol = content.LineLength(currentPos.Line - 1) - 1;
+                currentPos = new TextPosition(currentPos.Line - 1, lastCol);
+            } else {
+                currentPos = new TextPosition(currentPos.Line, currentPos.Column - 1);
+            }
+
+            Dictionary<bool, string> state = _states["start"];
             while (true) {
                 char current = content.CharAt(currentPos);
                 bool trigger = char.IsWhiteSpace(current);
                 string action = state[trigger];
                 switch (action) {
                     case "end":
-                        return currentPos;
+                        // Previous word boundry is ahead of the space.
+                        return new TextPosition(currentPos.Line, currentPos.Column + 1);
                     case "enterWord":
                         state = _states["inWord"];
                         break;
@@ -72,13 +98,7 @@ public class TextCaret : ITextCaret {
 
                 if (currentPos.Column == 0) {
                     // start of line
-                    if (currentPos.Line == 0) {
-                        // start of content
-                        return currentPos;
-                    }
-
-                    int lastCol = content.LineLength(currentPos.Line - 1);
-                    currentPos = new TextPosition(currentPos.Line - 1, lastCol);
+                    return currentPos;
                 } else {
                     currentPos = new TextPosition(currentPos.Line, currentPos.Column - 1);
                 }
@@ -95,6 +115,7 @@ public class TextCaret : ITextCaret {
 
     public TextCaret(TextPosition startPosition = new()) {
         Position = startPosition;
+        _requestedColumn = startPosition.Column;
     }
 
     /// <inheritdoc/>
@@ -118,6 +139,7 @@ public class TextCaret : ITextCaret {
             _requestedColumn = Position.Column;
         } else {
             Position = position;
+            _requestedColumn = Position.Column;
         }
     }
 
