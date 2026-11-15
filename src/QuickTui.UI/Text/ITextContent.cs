@@ -49,6 +49,13 @@ public interface ITextContent {
     public TextPosition Insert(char c, TextPosition position);
 
     /// <summary>
+    /// Insert a line break at the current cursor position
+    /// </summary>
+    /// <param name="lineCount"></param>
+    /// <returns></returns>
+    public TextPosition InsertLineBreak(TextPosition position);
+
+    /// <summary>
     /// Delete text in front of the current cursor position.
     /// </summary>
     /// <param name="length"></param>

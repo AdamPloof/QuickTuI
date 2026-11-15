@@ -80,6 +80,20 @@ public class TextContent : ITextContent {
     }
 
     /// <inheritdoc/>
+    public TextPosition InsertLineBreak(TextPosition position) {
+        int line = Numeric.Clamp(position.Line, 0, Lines.Count);
+        if (line > Lines.Count - 1) {
+            return position;
+        }
+
+        string newLine = Lines[position.Line][position.Column..];
+        Lines[position.Line] = Lines[position.Line][..position.Column];
+        Lines.Insert(position.Line + 1, newLine);
+
+        return new TextPosition(position.Line + 1, 0);
+    }
+
+    /// <inheritdoc/>
     public TextPosition Delete(int length, TextPosition position) {
         int line = Numeric.Clamp(position.Line, 0, Lines.Count);
         if (line > Lines.Count || length == 0) {

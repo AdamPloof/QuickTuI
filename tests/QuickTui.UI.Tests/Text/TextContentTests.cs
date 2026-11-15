@@ -395,4 +395,37 @@ public class PositionDeltaTests {
             content.PositionDelta(oldPos, 1);
         });
     }
+
+    [Fact]
+    public void InsertLineBreakLineStart() {
+        TextContent content = new(baseStr);
+        TextPosition oldPos = new(1, 0);
+        TextPosition newPos = content.InsertLineBreak(oldPos);
+
+        Assert.Equal(new TextPosition(2, 0), newPos);
+        Assert.Equal(0, content.Lines[1].Length);
+        Assert.Equal(10, content.Lines[2].Length);
+    }
+
+    [Fact]
+    public void InsertLineBreakMidLine() {
+        TextContent content = new(baseStr);
+        TextPosition oldPos = new(2, 5);
+        TextPosition newPos = content.InsertLineBreak(oldPos);
+
+        Assert.Equal(new TextPosition(3, 0), newPos);
+        Assert.Equal(5, content.Lines[2].Length);
+        Assert.Equal(11, content.Lines[3].Length);
+    }
+    
+    [Fact]
+    public void InsertLineBreakLineEnd() {
+        TextContent content = new(baseStr);
+        TextPosition oldPos = new(2, 16);
+        TextPosition newPos = content.InsertLineBreak(oldPos);
+
+        Assert.Equal(new TextPosition(3, 0), newPos);
+        Assert.Equal(16, content.Lines[2].Length);
+        Assert.Equal(0, content.Lines[3].Length);
+    }
 }
