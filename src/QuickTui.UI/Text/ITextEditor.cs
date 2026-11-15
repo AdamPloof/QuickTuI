@@ -1,3 +1,5 @@
+using QuickTui.UI.Events;
+
 namespace QuickTui.UI.Text;
 
 /// <summary>
@@ -7,9 +9,9 @@ namespace QuickTui.UI.Text;
 /// </summary>
 public interface ITextEditor {
     /// <summary>
-    /// Handle an editor command by updating the state of the text editor.
+    /// Handle an input event to update the state of the text editor.
     /// </summary>
     /// <remarks>TODO: eventually this should dispatch a EditorChangeEvent</remarks>
-    /// <param name="command"></param>
-    public void HandleCommand(EditorCommand command);
+    /// <param name="uiEvent"></param>
+    public void HandleInput(UiEvent uiEvent);
 }

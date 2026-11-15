@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 
+using QuickTui.UI.Events;
+
 namespace QuickTui.UI.Text;
 
 /// <inheritdoc/>
@@ -15,46 +17,82 @@ public class TextEditor : ITextEditor {
         Debug.Assert(_content.LineCount() > 0, "Expected TextContent to contain at least one line");
     }
 
-    /// <inheritdoc/>
-    public void HandleCommand(EditorCommand command) {
-        switch (command) {
-            case InsertText insert:
-                // TODO: handle me
+    public void HandleInput(UiEvent uiEvent) {
+        TextPosition newPosition = uiEvent switch {
+            TextInputEvent e => _content.Insert(e.Text, _caret.Position),
+            KeyEvent e => HandleKeyEvent(e),
+            _ => throw new NotSupportedException(
+                $"Cannot parse event of type {uiEvent.GetType()} to EditorCommand"
+            )
+        };
+
+        if (newPosition != _caret.Position) {
+            _caret.MoveTo(newPosition, _content);
+        }
+    }
+
+    private TextPosition HandleKeyEvent(KeyEvent keyEvent) {
+        // TODO: It be nice if there was a more reliable way to keep TextCaret and TextContent
+        //       in sync. Maybe a signal/slot?
+        TextPosition newPosition = _caret.Position;
+        switch (keyEvent.Key) {
+            case ConsoleKey.Backspace:
+                newPosition = _content.Backspace(1, _caret.Position);
                 break;
-            case Backspace backspace:
-                // TODO: handle me
+            case ConsoleKey.Delete:
+                newPosition = _content.Delete(1, _caret.Position);
                 break;
-            case Delete delete:
-                // TODO: handle me
+            case ConsoleKey.Enter:
+                newPosition = _content.InsertLineBreak(_caret.Position);
                 break;
-            case InsertLineBreak enter:
-                // TODO: handle me
+            case ConsoleKey.LeftArrow:
+                if (keyEvent.Modifiers.HasFlag(ConsoleModifiers.Alt)) {
+                    _caret.MovePreviousWord(_content);
+                } else {
+                    _caret.MoveLeft(_content);
+                }
                 break;
-            case MoveLeft moveLeft:
-                // TODO: handle me
+            case ConsoleKey.RightArrow:
+                if (keyEvent.Modifiers.HasFlag(ConsoleModifiers.Alt)) {
+                    _caret.MoveNextWord(_content);
+                } else {
+                    _caret.MoveRight(_content);
+                }
                 break;
-            case MoveRight moveRight:
-                // TODO: handle me
+            case ConsoleKey.DownArrow:
+                // TODO: this is platform specific behavior (mac)
+                if (keyEvent.Modifiers.HasFlag(ConsoleModifiers.Control)) {
+                    _caret.MoveToEnd(_content);
+                } else {
+                    _caret.MoveDown(_content);
+                }
                 break;
-            case MoveDown moveDown:
-                // TODO: handle me
+            case ConsoleKey.UpArrow:
+                // TODO: this is platform specific behavior (mac)
+                if (keyEvent.Modifiers.HasFlag(ConsoleModifiers.Control)) {
+                    _caret.MoveToStart(_content);
+                } else {
+                    _caret.MoveUp(_content);
+                }
                 break;
-            case MoveUp moveUp:
-                // TODO: handle me
+            case ConsoleKey.PageDown:
+                _caret.MovePageDown(_content);
                 break;
-            case MovePageUp movePageUp:
-                // TODO: handle me
+            case ConsoleKey.PageUp:
+                _caret.MovePageUp(_content);
                 break;
-            case MovePageDown movePageDown:
-                // TODO: handle me
+            case ConsoleKey.End:
+                _caret.MoveToLineEnd(_content);
                 break;
-            case ToggleInsertMode toggleInsertMode:
-                // TODO: handle me
+            case ConsoleKey.Home:
+                _caret.MoveToLineStart(_content);
                 break;
             default:
-                throw new NotImplementedException(
-                    $"No handler available for command: {command.GetType()}"
+                throw new NotSupportedException(
+                    $"Unsupported KeyEvent cannot be convert to EditorCommand. Key: {keyEvent.Key}"
                 );
-        }
+        };
+
+        return newPosition;
     }
 }

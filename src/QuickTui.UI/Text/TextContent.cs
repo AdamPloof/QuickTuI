@@ -12,7 +12,7 @@ namespace QuickTui.UI.Text;
 /// text buffers.
 /// </summary>
 public class TextContent : ITextContent {
-    public List<string> Lines;
+    public List<string> Lines { get; private set; }
 
     public TextContent() {
         Lines = [""];
@@ -24,11 +24,6 @@ public class TextContent : ITextContent {
 
     public TextContent(List<string> lines) {
         Lines = lines;
-    }
-
-    /// <inheritdoc/>
-    public List<string> GetLines() {
-        return Lines;
     }
 
     /// <inheritdoc/>

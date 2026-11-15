@@ -10,6 +10,8 @@ namespace QuickTui.UI.Text;
 /// TODO: handle insert mode (overwrite)
 /// </remarks>
 public interface ITextContent {
+    public List<string> Lines { get; }
+
     /// <summary>
     /// Returns the char at a given position. If the postion is not within the content
     /// throw an ArgumentOutOfRangeException.

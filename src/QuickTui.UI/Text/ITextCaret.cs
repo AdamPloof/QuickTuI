@@ -5,6 +5,11 @@ namespace QuickTui.UI.Text;
 /// </summary>
 public interface ITextCaret {
     /// <summary>
+    /// The current position in the content.
+    /// </summary>
+    public TextPosition Position { get; }
+    
+    /// <summary>
     /// Move caret to arbitrary position. If the position is outside of the
     /// content range, it is clamped (e.g. end of line, last line, etc.)
     /// </summary>
