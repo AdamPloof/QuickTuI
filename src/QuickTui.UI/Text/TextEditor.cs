@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Diagnostics;
 
 using QuickTui.UI.Events;
@@ -15,6 +16,19 @@ public class TextEditor : ITextEditor {
         _caret = caret;
 
         Debug.Assert(_content.LineCount() > 0, "Expected TextContent to contain at least one line");
+    }
+
+    public Cell[] ContentBuffer() {
+        string content = _content.ToString();
+
+        // TODO: this is obviously not right. Needs to be width/height of content window.
+        return TextBuffer.FromString(content, _content.Lines[0].Length, _content.Lines.Count);
+    }
+    
+    public Cursor GetCursor() {
+        return new Cursor() {
+            Position = new Point(_caret.Position.Column, _caret.Position.Line)
+        };
     }
 
     public void HandleInput(UiEvent uiEvent) {

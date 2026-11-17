@@ -9,6 +9,18 @@ namespace QuickTui.UI.Text;
 /// </summary>
 public interface ITextEditor {
     /// <summary>
+    /// Get visible content as a cell buffer.
+    /// </summary>
+    /// <returns></returns>
+    public Cell[] ContentBuffer();
+
+    /// <summary>
+    /// Get the cursor position relative to the visibile content window.
+    /// </summary>
+    /// <returns></returns>
+    public Cursor GetCursor();
+
+    /// <summary>
     /// Handle an input event to update the state of the text editor.
     /// </summary>
     /// <remarks>TODO: eventually this should dispatch a EditorChangeEvent</remarks>
