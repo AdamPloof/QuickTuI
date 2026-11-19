@@ -15,18 +15,39 @@ public class ContentWindow : IContentWindow {
     }
 
     /// <inheritdoc/>
+    public IContentWindow SetDimensions(int width, int height) {
+        _width = width;
+        _height = height;
+
+        return this;
+    }
+
+    /// <inheritdoc/>
+    public IContentWindow SetOrigin(TextPosition origin) {
+        _origin = origin;
+
+        return this;
+    }
+
+    /// <inheritdoc/>
     public Cell[] ContentBuffer(ITextContent content) {
         Cell[] buffer = Cell.EmptyCells(_width * _height);
-        int row = 0;
-        for (int line = _origin.Line; line < (_origin.Line + _height); line++) {
-            int col = 0;
-            foreach (char c in content.Lines[line]) {
-                if (col < _origin.Column || col >= (_origin.Column + _width)) {
-                    continue;
-                }
+        if (_origin.Line >= content.LineCount()) {
+            return buffer;   
+        }
 
-                buffer[col + (row * _width)] = new Cell(c);
-                col++;
+        int row = 0;
+        for (int lineIdx = _origin.Line; lineIdx < (_origin.Line + _height); lineIdx++) {
+            string line = content.Lines[lineIdx];
+            if (_origin.Column >= line.Length) {
+                row++;
+                continue;
+            }
+
+            int visibleLength = Math.Min(_width, line.Length - _origin.Column);
+            ReadOnlySpan<char> visible = line.AsSpan(_origin.Column, visibleLength);
+            for (int col = 0; col < visible.Length; col++) {
+                buffer[col + (row * _width)] = new Cell(visible[col]);
             }
 
             row++;

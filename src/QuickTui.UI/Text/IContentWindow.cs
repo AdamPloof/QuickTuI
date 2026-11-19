@@ -6,6 +6,19 @@ namespace QuickTui.UI.Text;
 /// </summary>
 public interface IContentWindow {
     /// <summary>
+    /// Set the dimension of the window
+    /// </summary>
+    /// <returns></returns>
+    public IContentWindow SetDimensions(int width, int height);
+
+    /// <summary>
+    /// Set the origin, aka the top left corner of the window.
+    /// </summary>
+    /// <param name="origin"></param>
+    /// <returns></returns>
+    public IContentWindow SetOrigin(TextPosition origin);
+
+    /// <summary>
     /// Get visible content as a cell buffer.
     /// </summary>
     /// <returns></returns>
